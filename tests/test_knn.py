@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 # 4 points on a diagonal line with d^2 = 0.1^2+0.1^2 = 0.02 between them.
 # 1 point very far away.
@@ -162,30 +163,74 @@ def test_select_knn_cuda():
     assert torch.allclose(neigh_indices, expected_neigh_indices)
     assert torch.allclose(neigh_dist_sq, expected_neigh_dist_sq)
 
+
+
 def test_select_knn_directional_cuda():
+    k = 5
+    nbatch = 5
+    def sort(matrix, sorted_indices):
+        sorted_matrix = torch.zeros_like(matrix)
+        for i in range(matrix.size(0)):
+            sorted_matrix[i] = matrix[i, sorted_indices[i]]
+        return sorted_matrix
+
     from torch_cmspepr import select_knn_directional
 
-    nodes_of = torch.rand(10,3)
-    batch_of = torch.zeros(nodes_of.shape[0], dtype=torch.int64)
-    nodes_in = torch.rand(4,3)
-    batch_in = torch.zeros(nodes_in.shape[0], dtype=torch.int64)
+    nodes_of = []
+    batch_of = []
+    nodes_in = []
+    batch_in = []
+    expected_neigh_dist = []
+    expected_neigh_indices = []
 
-    k = 5
+    NN = 0
+    MM = 0
+    for i in range(nbatch):
+        N = np.random.randint(k+1, k+10)
+        M = np.random.randint(k+1, k+10)
+        _nodes_of = torch.rand(N,3)
+        nodes_of += [_nodes_of]
+        _batch_of = torch.zeros(_nodes_of.shape[0], dtype=torch.int64) +i
+        batch_of += [_batch_of]
+        _nodes_in = torch.rand(M,3)
+        nodes_in += [_nodes_in]
+        _batch_in = torch.zeros(_nodes_in.shape[0], dtype=torch.int64) +i
+        batch_in += [_batch_in]
+
+        distance = torch.cdist(_nodes_of, _nodes_in)
+        _expected_neigh_dist, _expected_neigh_indices = torch.topk(-distance, k=min(_nodes_in.shape[0], k), dim=1)
+        _expected_neigh_indices = _expected_neigh_indices.type(torch.int32)+MM
+        _expected_neigh_dist = _expected_neigh_dist**2
+        expected_neigh_dist += [_expected_neigh_dist]
+        expected_neigh_indices += [_expected_neigh_indices]
+        NN += N
+        MM += M
+
+    nodes_of = torch.cat(nodes_of, dim=0)
+    batch_of = torch.cat(batch_of, dim=0)
+    nodes_in = torch.cat(nodes_in, dim=0)
+    batch_in = torch.cat(batch_in, dim=0)
+    expected_neigh_dist = torch.cat(expected_neigh_dist, dim=0)
+    expected_neigh_indices = torch.cat(expected_neigh_indices, dim=0)
+
 
     device = torch.device('cuda')
     neigh_indices, neigh_dist_sq = select_knn_directional(
         nodes_of.to(device), nodes_in.to(device), k, batch_x=batch_of.to(device),batch_y=batch_in.to(device)
     )
 
+    _neigh_dist_sq = neigh_dist_sq.clone()
+    _neigh_dist_sq[neigh_indices==-1] = 10^8
+    sort_ind = torch.argsort(_neigh_dist_sq, dim=1)
+    neigh_indices = sort(neigh_indices, sort_ind)
+    neigh_dist_sq = sort(neigh_dist_sq, sort_ind)
+
     neigh_indices = neigh_indices.cpu()
     neigh_dist_sq = neigh_dist_sq.cpu()
 
-    distance = torch.cdist(nodes_of, nodes_in)
 
     print("NxN distnace:")
     print(distance)
-
-    expected_neigh_dist, expected_neigh_indices = torch.topk(-distance, k=min(nodes_in.shape[0], k), dim=1)
 
     # expected_neigh_dist_sq = distance*distance
 
@@ -195,11 +240,11 @@ def test_select_knn_directional_cuda():
     print('Found indices:')
     print(neigh_indices)
     print('Expected dist_sq:')
-    print(expected_neigh_dist**2)
+    print(expected_neigh_dist)
     print('Found dist_sq:')
     print(neigh_dist_sq)
     assert torch.allclose(neigh_indices, expected_neigh_indices)
-    assert torch.allclose(neigh_dist_sq, expected_neigh_dist_sq)
+    assert torch.allclose(neigh_dist_sq, expected_neigh_dist)
 
 
 test_select_knn_directional_cuda()
