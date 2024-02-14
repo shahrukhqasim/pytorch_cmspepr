@@ -51,6 +51,6 @@ load_ops(osp.join(THISDIR, "../select_knn_cpu.so"))
 load_ops(osp.join(THISDIR, "../select_knn_cuda.so"))
 
 
-from torch_cmspepr.select_knn import select_knn, knn_graph
+from torch_cmspepr.select_knn import select_knn, knn_graph, select_knn_directional
 
-__all__ = ['select_knn', 'knn_graph', 'logger']
+__all__ = ['select_knn','select_knn_directional', 'knn_graph', 'logger']

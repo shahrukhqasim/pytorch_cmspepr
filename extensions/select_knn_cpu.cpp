@@ -210,4 +210,5 @@ select_knn_cpu(torch::Tensor coords,
 
 TORCH_LIBRARY(select_knn_cpu, m) {
   m.def("select_knn_cpu", select_knn_cpu);
+//  m.def("select_knn_directional_cpu", select_knn_cpu);
 }

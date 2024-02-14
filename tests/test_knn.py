@@ -161,3 +161,45 @@ def test_select_knn_cuda():
     print(neigh_dist_sq)
     assert torch.allclose(neigh_indices, expected_neigh_indices)
     assert torch.allclose(neigh_dist_sq, expected_neigh_dist_sq)
+
+def test_select_knn_directional_cuda():
+    from torch_cmspepr import select_knn_directional
+
+    nodes_of = torch.rand(10,3)
+    batch_of = torch.zeros(nodes_of.shape[0], dtype=torch.int64)
+    nodes_in = torch.rand(4,3)
+    batch_in = torch.zeros(nodes_in.shape[0], dtype=torch.int64)
+
+    k = 5
+
+    device = torch.device('cuda')
+    neigh_indices, neigh_dist_sq = select_knn_directional(
+        nodes_of.to(device), nodes_in.to(device), k, batch_x=batch_of.to(device),batch_y=batch_in.to(device)
+    )
+
+    neigh_indices = neigh_indices.cpu()
+    neigh_dist_sq = neigh_dist_sq.cpu()
+
+    distance = torch.cdist(nodes_of, nodes_in)
+
+    print("NxN distnace:")
+    print(distance)
+
+    expected_neigh_dist, expected_neigh_indices = torch.topk(-distance, k=min(nodes_in.shape[0], k), dim=1)
+
+    # expected_neigh_dist_sq = distance*distance
+
+
+    print('Expected indices:')
+    print(expected_neigh_indices)
+    print('Found indices:')
+    print(neigh_indices)
+    print('Expected dist_sq:')
+    print(expected_neigh_dist**2)
+    print('Found dist_sq:')
+    print(neigh_dist_sq)
+    assert torch.allclose(neigh_indices, expected_neigh_indices)
+    assert torch.allclose(neigh_dist_sq, expected_neigh_dist_sq)
+
+
+test_select_knn_directional_cuda()
