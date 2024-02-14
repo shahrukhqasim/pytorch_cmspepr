@@ -15,15 +15,21 @@ def select_knn_directional(
         mask_mode: int = 1,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     r"""Finds for each element in :obj:`x` the :obj:`k` nearest points in
-    :obj:`x`.
+    :obj:`y`.
 
     Args:
         x (Tensor): Node feature matrix of which to comptue KNN of
             :math:`\mathbf{X} \in \mathbb{R}^{N \times F}`.
+        y (Tensor): Node feature matrix of which to comptue KNN in
+            :math:`\mathbf{X} \in \mathbb{R}^{M \times F}`.
         k (int): The number of neighbors.
         batch_x (LongTensor, optional): Batch vector
             :math:`\mathbf{b} \in {\{ 0, \ldots, B-1\}}^N`, which assigns each
             node to a specific example. :obj:`batch_x` needs to be sorted.
+            (default: :obj:`None`)
+        batch_x (LongTensor, optional): Batch vector
+            :math:`\mathbf{b} \in {\{ 0, \ldots, B-1\}}^M`, which assigns each
+            node to a specific example. :obj:`batch_y` needs to be sorted.
             (default: :obj:`None`)
         max_radius (float): Maximum distance to nearest neighbours. (default: :obj:`1e9`)
         mask_mode (int): ??? (default: :obj:`1`)

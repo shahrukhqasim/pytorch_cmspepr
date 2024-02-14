@@ -219,6 +219,8 @@ def test_select_knn_directional_cuda():
         nodes_of.to(device), nodes_in.to(device), k, batch_x=batch_of.to(device),batch_y=batch_in.to(device)
     )
 
+    # The KNN kernel doesn't sort the K nearest neighbors. This should be done manually to compare results to the slower
+    # torch method.
     _neigh_dist_sq = neigh_dist_sq.clone()
     _neigh_dist_sq[neigh_indices==-1] = 10^8
     sort_ind = torch.argsort(_neigh_dist_sq, dim=1)
@@ -227,13 +229,6 @@ def test_select_knn_directional_cuda():
 
     neigh_indices = neigh_indices.cpu()
     neigh_dist_sq = neigh_dist_sq.cpu()
-
-
-    print("NxN distnace:")
-    print(distance)
-
-    # expected_neigh_dist_sq = distance*distance
-
 
     print('Expected indices:')
     print(expected_neigh_indices)
