@@ -110,7 +110,6 @@ def select_knn_directional(
             max_radius,
             mask_mode,
         )
-        print("Hello there!!")
         return ret
 
 @torch.jit.script
